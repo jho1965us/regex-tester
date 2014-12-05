@@ -5,6 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:common="clr-namespace:Sharomank.RegexTester.Common"
              xmlns:converters="clr-namespace:Sharomank.RegexTester.Converters"
+             xmlns:uc="clr-namespace:Sharomank.RegexTester"
+             xmlns:cbc="clr-namespace:CodeBoxControl;assembly=CodeBoxControl"
              mc:Ignorable="d" 
              FontSize="12"
              Name="RegexTesterControl"
@@ -242,9 +244,11 @@
                 <RowDefinition Height="*" MinHeight="50"></RowDefinition>
                 <RowDefinition Height="auto"></RowDefinition>
                 <RowDefinition Height="*" MinHeight="50"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="*" MinHeight="50"></RowDefinition>
             </Grid.RowDefinitions>
             <GroupBox Name="gbInput" Header="Input text" Style="{StaticResource GroupBox}">
-                <TextBox Name="tbInputText"
+                <cbc:CodeBox Name="tbInputText"
                          AcceptsReturn="True"
                          AcceptsTab="True"
                          VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" />
@@ -253,13 +257,18 @@
             <GridSplitter ResizeDirection="Rows" Grid.Row="1" HorizontalAlignment="Stretch" Height="3" Background="DarkGray" />
 
             <GroupBox Name="gbOutput" Header="Output result" Grid.Row="2" Style="{StaticResource GroupBox}">
-                <TextBox Name="tbOutputText"
+                <cbc:CodeBox Name="tbOutputText"
                          IsReadOnly="True"
                          IsUndoEnabled="False"
                          VerticalScrollBarVisibility="Visible"
                          HorizontalScrollBarVisibility="Auto"
-                         Text="{Binding OutputText, Mode=OneWay}">
-                </TextBox>
+                         Text="{Binding OutputText, Mode=OneWay}" />
+            </GroupBox>
+
+            <GridSplitter ResizeDirection="Rows" Grid.Row="3" HorizontalAlignment="Stretch" Height="3" Background="DarkGray" />
+
+            <GroupBox Name="gbMatches" Header="Matches array" Grid.Row="4" Style="{StaticResource GroupBox}">
+                <uc:RegexTesterMatches x:Name="regexTesterMatches" SelectedItemChanged="regexTesterMatches_SelectedItemChanged"/>
             </GroupBox>
         </Grid>
 

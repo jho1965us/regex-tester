@@ -1,10 +1,15 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Net.Mime;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
 using System.Windows.Media;
+using CodeBoxControl.Decorations;
 using Sharomank.RegexTester.Common;
 using Sharomank.RegexTester.Handlers;
 using Sharomank.RegexTester.Commands;
@@ -155,9 +160,10 @@ namespace Sharomank.RegexTester
                 return;
             }
 
+            Regex inputRegex;
             try
             {
-                Regex checkInputRegex = new Regex(matchPattern);
+                inputRegex = new Regex(matchPattern, GetRegexOptions());
                 ClearRegexSyntaxError(rtbInputRegex, rtbInputReplace);
             }
             catch (Exception ex)
@@ -178,7 +184,7 @@ namespace Sharomank.RegexTester
             }
 
             RegexProcessContext context = new RegexProcessContext();
-            context.MatchRegex = new Regex(matchPattern, GetRegexOptions());
+            context.MatchRegex = inputRegex;
             context.ReplaceRegexPattern = GetInputText(rtbInputReplace);
             context.CurrentMode = GetCurrentMode();
             context.InputText = tbInputText.Text;
@@ -208,9 +214,9 @@ namespace Sharomank.RegexTester
             return (OutputMode)Convert.ToInt32(((ComboBoxItem)cbOutputMode.SelectedItem).Tag);
         }
 
-        private static string GetInputText(RichTextBox rtb)
+        internal static string GetInputText(RichTextBox rtb)
         {
-            TextRange documentRange = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+            var documentRange = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
             documentRange.ClearAllProperties();
             return documentRange.Text.Substring(0, documentRange.Text.Length - 2);
         }
@@ -243,6 +249,44 @@ namespace Sharomank.RegexTester
         {
             gbInput.Header = string.Format("Input text, length: {0}, lines: {1}", tbInputText.Text.Length, tbInputText.LineCount);
             gbOutput.Header = string.Format("Output text, length: {0}, lines: {1}", tbOutputText.Text.Length, tbOutputText.LineCount);
+            gbMatches.Header = string.Format("Matches array, length: {0}", regexTesterMatches.tlvMatches.Items.Count);
+        }
+
+        public int Lines(string s)
+        {
+            int line;
+            int pos;
+            return Lines(s, -1, out line, out pos);
+        }
+
+        public static int Lines(string s, int index, out int line, out int pos)
+        {
+            if (s.Length == 0)
+            {
+                line = 0;
+                pos = 0;
+                return 0;
+            }
+            if (index < 0)
+                index = s.Length;
+
+            var count = 1;
+            var position = 0;
+            var startOfLinePosition = 0;
+            while ((position = s.IndexOf('\n', position)) != -1 && index > position)
+            {
+                count++;
+                position++;         // Skip this occurance!
+                startOfLinePosition = position;
+            }
+
+            pos = index - startOfLinePosition;
+            line = count;
+
+            if (position == s.Length)
+                count--; // last line end in \n so that don't count
+
+            return count;
         }
 
         private void AutorunProcess()
@@ -337,5 +381,46 @@ namespace Sharomank.RegexTester
         }
 
         #endregion
+
+        private void regexTesterMatches_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            var captureViewModel = e.NewValue as CaptureViewModel;
+            tbInputText.Decorations.Clear();
+            if (captureViewModel != null)
+            {
+                var groupViewModel = captureViewModel as GroupViewModel;
+                if (groupViewModel != null)
+                {
+                    foreach (var capturesItemViewModel in groupViewModel.Captures)
+                    {
+                        if (captureViewModel.TextIndex != capturesItemViewModel.TextIndex ||
+                            captureViewModel.TextLength != capturesItemViewModel.TextLength)
+                        {
+                            Decorate(capturesItemViewModel, Brushes.LightGreen);
+                        }
+                    }
+                }
+                Decorate(captureViewModel, Brushes.DarkSeaGreen);
+            }
+            var collectionTreeListViewItem = e.NewValue as CollectionTreeListViewItem;
+            if (collectionTreeListViewItem != null)
+            {
+                foreach (CaptureViewModel item in collectionTreeListViewItem.Items)
+                {
+                    Decorate(item, Brushes.LightGreen);
+                }
+            }
+            tbInputText.InvalidateVisual();
+        }
+
+        private void Decorate(CaptureViewModel captureViewModel, Brush brush)
+        {
+            var decoration = new ExplicitDecoration();
+            decoration.DecorationType = EDecorationType.Hilight;
+            decoration.Brush = brush;
+            decoration.Start = captureViewModel.TextIndex;
+            decoration.Length = captureViewModel.TextLength;
+            tbInputText.Decorations.Add(decoration);
+        }
     }
 }

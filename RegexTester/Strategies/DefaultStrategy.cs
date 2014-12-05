@@ -2,10 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Sharomank.RegexTester.Strategies
 {
@@ -22,6 +19,7 @@ namespace Sharomank.RegexTester.Strategies
             }
 
             var matches = context.MatchRegex.Matches(context.InputText);
+            viewModel.Matches = new MatchesViewModel(context.MatchRegex, matches, context.InputText);
 
             int count = 0;
             var isSimpleMatch = string.IsNullOrEmpty(context.ReplaceRegexPattern);

@@ -113,6 +113,8 @@ namespace Sharomank.RegexTester.Common
             }
         }
 
+        public MatchesViewModel Matches { get; set; }
+
         #endregion
 
         #region Methods
@@ -131,6 +133,7 @@ namespace Sharomank.RegexTester.Common
             NotifyPropertyChanged("Status");
             NotifyPropertyChanged("StatusTooltip");
             NotifyPropertyChanged("StatusBrush");
+            NotifyPropertyChanged("Matches");
         }
 
         public void AppendOutputText(string text)
