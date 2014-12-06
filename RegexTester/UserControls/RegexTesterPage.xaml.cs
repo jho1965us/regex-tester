@@ -189,6 +189,7 @@ namespace Sharomank.RegexTester
             context.CurrentMode = GetCurrentMode();
             context.InputText = tbInputText.Text;
             context.OutputMode = GetOutputMode();
+            context.ReplaceMode = GetReplaceMode();
 
             if (!worker.IsBusy)
             {
@@ -212,6 +213,11 @@ namespace Sharomank.RegexTester
         private OutputMode GetOutputMode()
         {
             return (OutputMode)Convert.ToInt32(((ComboBoxItem)cbOutputMode.SelectedItem).Tag);
+        }
+
+        private ReplaceMode GetReplaceMode()
+        {
+            return (ReplaceMode)Convert.ToInt32(((ComboBoxItem)cbReplaceMode.SelectedItem).Tag);
         }
 
         internal static string GetInputText(RichTextBox rtb)
@@ -402,6 +408,17 @@ namespace Sharomank.RegexTester
                 }
                 Decorate(captureViewModel, Brushes.DarkSeaGreen);
             }
+            tbOutputText.Decorations.Clear();
+            var matchViewModel = captureViewModel as MatchViewModel;
+            if (matchViewModel != null && matchViewModel.MatchAndReplace != null)
+            {
+                var decoration = new ExplicitDecoration();
+                decoration.DecorationType = EDecorationType.Hilight;
+                decoration.Brush = Brushes.DarkSeaGreen;
+                decoration.Start = matchViewModel.MatchAndReplace.ReplaceIndex;
+                decoration.Length = matchViewModel.MatchAndReplace.ReplaceValue.Length;
+                tbOutputText.Decorations.Add(decoration);
+            }
             var collectionTreeListViewItem = e.NewValue as CollectionTreeListViewItem;
             if (collectionTreeListViewItem != null)
             {
@@ -410,6 +427,7 @@ namespace Sharomank.RegexTester
                     Decorate(item, Brushes.LightGreen);
                 }
             }
+            tbOutputText.InvalidateVisual();
             tbInputText.InvalidateVisual();
         }
 

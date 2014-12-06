@@ -11,32 +11,36 @@ namespace Sharomank.RegexTester.Common
     public class MatchesViewModel
     {
         private readonly Regex _regex;
-        private readonly MatchCollection _matches;
         private readonly string _inputText;
         private ObservableCollection<MatchViewModel> _matchViewModels;
 
         public MatchesViewModel(Regex regex, MatchCollection matches, string inputText)
         {
             _regex = regex;
-            _matches = matches;
+            _matchViewModels = CaptureViewModel.NewCollection(matches.Cast<Match>().Select(Selector));
+            _inputText = inputText;
+        }
+
+        public MatchesViewModel(Regex regex, IEnumerable<MatchAndReplace> matches, string inputText)
+        {
+            _regex = regex;
+            _matchViewModels = CaptureViewModel.NewCollection(matches.Select(Selector));
             _inputText = inputText;
         }
 
         public ObservableCollection<MatchViewModel> Matches
         {
-            get
-            {
-                if (_matchViewModels == null)
-                {
-                    _matchViewModels = CaptureViewModel.NewCollection(_matches.Cast<Match>().Select(Selector));
-                }
-                return _matchViewModels;
-            }
+            get { return _matchViewModels; }
         }
 
         private MatchViewModel Selector(Match m, int i)
         {
             return new MatchViewModel(m, i, this);
+        }
+
+        private MatchViewModel Selector(MatchAndReplace matchAndReplace, int i)
+        {
+            return new MatchViewModel(matchAndReplace, i, this);
         }
 
         public Regex Regex
@@ -50,9 +54,40 @@ namespace Sharomank.RegexTester.Common
         }
     }
 
+    public class MatchAndReplace
+    {
+        private Match _match;
+        private int _replaceIndex;
+        private readonly string _replaceValue;
+
+        public MatchAndReplace(Match match, int replaceIndex, string replaceValue)
+        {
+            _match = match;
+            _replaceIndex = replaceIndex;
+            _replaceValue = replaceValue;
+        }
+
+        public Match Match
+        {
+            get { return _match; }
+        }
+
+        public int ReplaceIndex
+        {
+            get { return _replaceIndex; }
+            set { _replaceIndex = value; }
+        }
+
+        public string ReplaceValue
+        {
+            get { return _replaceValue; }
+        }
+    }
+
     public class MatchViewModel : GroupViewModel
     {
         protected Match _match;
+        private readonly MatchAndReplace _matchAndReplace;
         private readonly int _i;
         private readonly MatchesViewModel _matchesViewModel;
         private ObservableCollection<GroupsItemViewModel> _groupsItemViewModels;
@@ -61,6 +96,15 @@ namespace Sharomank.RegexTester.Common
             : base(match)
         {
             _match = match;
+            _i = i;
+            _matchesViewModel = matchesViewModel;
+        }
+
+        public MatchViewModel(MatchAndReplace matchAndReplace, int i, MatchesViewModel matchesViewModel)
+            : base(matchAndReplace.Match)
+        {
+            _match = matchAndReplace.Match;
+            _matchAndReplace = matchAndReplace;
             _i = i;
             _matchesViewModel = matchesViewModel;
         }
@@ -95,6 +139,11 @@ namespace Sharomank.RegexTester.Common
         protected override string InputText
         {
             get { return _matchesViewModel.InputText; }
+        }
+
+        public MatchAndReplace MatchAndReplace
+        {
+            get { return _matchAndReplace; }
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using Sharomank.RegexTester.Common;
+﻿using System.Windows.Documents;
+using Sharomank.RegexTester.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -39,11 +40,9 @@ namespace Sharomank.RegexTester.Strategies
                     }
                     else
                     {
-                        string result = context.ReplaceRegexPattern;
-                        foreach (var group in groups)
-                        {
-                            result = result.Replace(group.Value, item.Groups[group.Key].Value);
-                        }
+                        string result = Replace(worker, context, item, groups);
+                        if (result == null)
+                            return false;
                         viewModel.AppendOutputText(result);
                     }
                     count++;
@@ -62,6 +61,7 @@ namespace Sharomank.RegexTester.Strategies
 
             int count = 0;
             var matches = context.MatchRegex.Split(context.InputText);
+            viewModel.Matches = null;
             foreach (var str in matches)
             {
                 if (worker.CancellationPending)
@@ -84,23 +84,67 @@ namespace Sharomank.RegexTester.Strategies
                 return OperationIsComplete(worker);
             }
 
-            int count = 0;
-            string result = context.MatchRegex.Replace(context.InputText, delegate(Match m)
-            {
-                string value = context.ReplaceRegexPattern;
-                foreach (var groupName in context.MatchRegex.GetGroupNames())
-                {
-                    if (worker.CancellationPending)
-                        return string.Empty;
+            Dictionary<String, String> groups = GetMatchGroups(context, false);
 
-                    value = value.Replace(string.Format("$[{0}]", groupName), m.Groups[groupName].Value);
+            var matches = new List<MatchAndReplace>();
+            string result;
+            if (!context.MatchRegex.RightToLeft)
+            {
+                var replaceIndex = 0;
+                var lastMatchEnd = 0;
+                result = context.MatchRegex.Replace(context.InputText, delegate(Match m)
+                {
+                    var value = Replace(worker, context, m, groups) ?? "";
+                    replaceIndex += m.Index - lastMatchEnd;
+                    matches.Add(new MatchAndReplace(m, replaceIndex, value));
+                    replaceIndex += value.Length;
+                    lastMatchEnd = m.Index + m.Length;
+                    return value;
+                });
+            }
+            else
+            {
+                var replaceIndex = 0;
+                var lastMatchEnd = context.InputText.Length;
+                result = context.MatchRegex.Replace(context.InputText, delegate(Match m)
+                {
+                    var value = Replace(worker, context, m, groups) ?? "";
+                    replaceIndex -= lastMatchEnd - (m.Index + m.Length) + value.Length;
+                    matches.Add(new MatchAndReplace(m, replaceIndex, value));
+                    lastMatchEnd = m.Index;
+                    return value;
+                });
+                foreach (var m in matches)
+                {
+                    m.ReplaceIndex += result.Length;
                 }
-                count++;
-                return value;
-            });
-            viewModel.Count = count;
+            }
+            viewModel.Matches = new MatchesViewModel(context.MatchRegex, matches, context.InputText);
+            viewModel.Count = matches.Count;
             viewModel.AppendOutputText(result);
             return OperationIsComplete(worker);
+        }
+
+        private static string Replace(BackgroundWorker worker, RegexProcessContext context, Match m, Dictionary<string, string> groups)
+        {
+            string value = "";
+            switch (context.ReplaceMode)
+            {
+                case ReplaceMode.Original:
+                    value = context.ReplaceRegexPattern;
+                    foreach (var group in groups)
+                    {
+                        if (worker.CancellationPending)
+                            return null;
+
+                        value = value.Replace(group.Value, m.Groups[group.Key].Value);
+                    }
+                    break;
+                case ReplaceMode.ReplaceSubstitutionPattern:
+                    value = m.Result(context.ReplaceRegexPattern);
+                    break;
+            }
+            return value;
         }
 
         private bool RegexIsMatch(RegexProcessContext context)

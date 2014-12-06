@@ -14,6 +14,7 @@ namespace Sharomank.RegexTester.Common
         public string InputText { get; set; }
         public RegexMode CurrentMode { get; set; }
         public OutputMode OutputMode { get; set; }
+        public ReplaceMode ReplaceMode { get; set; }
 
         public string ReplaceRegexPattern {
             get

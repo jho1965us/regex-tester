@@ -148,6 +148,7 @@
     <Compile Include="Commands\SaveCommand.cs" />
     <Compile Include="Common\KeyboardHelper.cs" />
     <Compile Include="Common\OutputMode.cs" />
+    <Compile Include="Common\ReplaceMode.cs" />
     <Compile Include="Common\StatusInfo.cs" />
     <Compile Include="Handlers\RegexProcessHandler.cs" />
     <Compile Include="Converters\InverseBooleanConverter.cs" />
